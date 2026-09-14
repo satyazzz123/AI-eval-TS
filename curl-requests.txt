@@ -1,0 +1,22 @@
+Create a new evaluation
+curl -X POST http://localhost:3000/evaluations \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Capital Cities","description":"Tests whether the model knows basic Physics"}'
+
+Create a test case linked to evaluation 
+curl -X POST http://localhost:3000/evaluations/7/test-cases \
+  -H "Content-Type: application/json" \
+  -d '{"input":"What is Quantum Tunneling","expected_output":"Quantum Physics"}'
+
+Assuming model 2 exists:
+
+curl -X POST http://localhost:3000/evaluations/7/run \
+  -H "Content-Type: application/json" \
+  -d '{"modelId":3}'
+
+Execute that run
+curl -X POST http://localhost:3000/evaluations/8/execute
+
+curl -X POST http://localhost:3000/models \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Fake Model","provider":"fake"}'
