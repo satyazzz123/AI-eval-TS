@@ -1,21 +1,40 @@
 Create a new evaluation
-curl -X POST http://localhost:3000/evaluations \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Capital Cities","description":"Tests whether the model knows basic Physics"}'
+curl -X POST http://localhost:3000/evaluations   -H "Content-Type: application/json"   -d '{"name":"Quantum Entanglement","description":"Tests conceptual understanding of quantum entanglement","evaluation_type":"llm_judge"}'
 
 Create a test case linked to evaluation 
-curl -X POST http://localhost:3000/evaluations/7/test-cases \
+curl -X POST http://localhost:3000/evaluations/9/test-cases \
   -H "Content-Type: application/json" \
-  -d '{"input":"What is Quantum Tunneling","expected_output":"Quantum Physics"}'
+  -d '{"input":"What is Quantum Tunneling","expected_output":"A quantum phenomenon where particles pass through a potential energy barrier they classicaly should not be able to surmount."}'
 
-Assuming model 2 exists:
+curl -X POST http://localhost:3000/evaluations/9/test-cases \
+  -H "Content-Type: application/json" \
+  -d '{"input":"What is Photosynthesis","expected_output":"The process used by plants to convert light energy into chemical energy."}'
 
-curl -X POST http://localhost:3000/evaluations/7/run \
+  curl -X POST http://localhost:3000/evaluations/9/test-cases \
+  -H "Content-Type: application/json" \
+  -d '{"input":"Explain the event horizon of a black hole","expected_output":"The boundary around a black hole beyond which nothing, not even light, can escape."}'
+
+curl -X POST http://localhost:3000/evaluations/9/test-cases \
+  -H "Content-Type: application/json" \
+  -d '{"input":"What is supervised machine learning","expected_output":"An AI approach where models are trained using labeled input and output data pairs."}'
+
+curl -X POST http://localhost:3000/evaluations/9/test-cases \
+  -H "Content-Type: application/json" \
+  -d '{"input":"Describe the stages of mitosis","expected_output":"Prophase, metaphase, anaphase, and telophase."}'
+
+curl -X POST http://localhost:3000/evaluations/9/test-cases \
+  -H "Content-Type: application/json" \
+  -d '{"input":"What causes economic inflation","expected_output":"An increase in the money supply or rising production costs leading to a drop in purchasing power."}'
+
+
+Assuming model 3 exists:
+
+curl -X POST http://localhost:3000/evaluations/9/run \
   -H "Content-Type: application/json" \
   -d '{"modelId":3}'
 
 Execute that run
-curl -X POST http://localhost:3000/evaluations/8/execute
+curl -X POST http://localhost:3000/evaluations/10/execute
 
 curl -X POST http://localhost:3000/models \
   -H "Content-Type: application/json" \

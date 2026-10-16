@@ -18,7 +18,7 @@ export class GeminiRunner implements ModelRunner{
 
         const interaction=await this.ai.models.generateContent({
             // model: this.modelName,
-            model:"gemini-2.5-flash",
+            model:"gemini-3.5-flash-lite",
             contents:input
         })
         if (interaction.text===undefined){

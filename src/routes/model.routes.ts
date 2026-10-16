@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { getModels,addModel,deleteModel,getModelById } from "../controllers/model.controller";
+import { rateLimitMiddleware } from "../middleware/rateLimiter.middleware";
 const router = Router();
-router.get("/",getModels)
+router.get("/",rateLimitMiddleware,getModels)
 
 router.post("/",addModel);
 

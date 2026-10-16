@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { createNewEvaluation, createNewEvaluationResults,createNewEvaluationRunByUser, createNewTestCase, getTestCases } from "../controllers/evaluation.controller";
+import { rateLimitMiddleware } from "../middleware/rateLimiter.middleware";
 
 const router=Router()
 
-router.get("/:id/test-cases",getTestCases)
+router.get("/:id/test-cases",rateLimitMiddleware,getTestCases)
 router.post("/",createNewEvaluation)
 router.post("/:id/test-cases",createNewTestCase)
 router.post("/:id/run",createNewEvaluationRunByUser)

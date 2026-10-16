@@ -32,7 +32,7 @@ export class LlmasJudge<T> implements Evaluator<T>{
     `;
         const {object}=await generateObject(
             {
-                model:this.googleProvider("gemini-2.5-flash"),
+                model:this.googleProvider("gemini-3.5-flash-lite"),
                 schema:this.schema,
                 prompt
             }

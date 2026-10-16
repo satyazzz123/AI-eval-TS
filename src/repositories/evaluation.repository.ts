@@ -1,7 +1,10 @@
 import { type TestCase ,type Evaluations ,type CreateEvaluationInput,type userTestInput, userEvaluationRunOnModel, EvaluationRun, EvaluationResult, statusTypes } from "../models";
 import { pool } from "../config/database"
-export const findTestCaseEvaluationById=async (id:number):Promise<TestCase[]>=>{
-    const result = await pool.query(
+import { Pool, PoolClient } from "pg";
+
+type DbExecutor = Pool | PoolClient;
+export const findTestCaseEvaluationById=async (db:DbExecutor ,id:number):Promise<TestCase[]>=>{
+    const result = await db.query(
         `SELECT *
          FROM test_cases
          WHERE evaluation_id = $1
@@ -14,8 +17,8 @@ export const findTestCaseEvaluationById=async (id:number):Promise<TestCase[]>=>{
 
 }
 
-export const insertEvaluation=async(evaluation:CreateEvaluationInput):Promise<Evaluations>=>{
-    const result=await pool.query(
+export const insertEvaluation=async(db:DbExecutor,evaluation:CreateEvaluationInput):Promise<Evaluations>=>{
+    const result=await db.query(
         `
         INSERT INTO evaluations (name,description,evaluation_type)
         VALUES ($1,$2,$3)
@@ -25,8 +28,8 @@ export const insertEvaluation=async(evaluation:CreateEvaluationInput):Promise<Ev
     return result.rows[0]
 }
 
-export const getEvaluationById=async(evaluationId:number):Promise<Evaluations>=>{
-    const result=await pool.query(
+export const getEvaluationById=async(db:DbExecutor,evaluationId:number):Promise<Evaluations>=>{
+    const result=await db.query(
         `
         SELECT * 
         FROM evaluations
@@ -37,8 +40,8 @@ export const getEvaluationById=async(evaluationId:number):Promise<Evaluations>=>
     return result.rows[0]
 }
 
-export const insertTestCase=async(id:number,test:userTestInput):Promise<TestCase>=>{
-    const result=await pool.query(
+export const insertTestCase=async(db:DbExecutor,id:number,test:userTestInput):Promise<TestCase>=>{
+    const result=await db.query(
         `
         INSERT INTO test_cases
             (evaluation_id,input,expected_output)
@@ -50,9 +53,9 @@ export const insertTestCase=async(id:number,test:userTestInput):Promise<TestCase
     return result.rows[0]
 }
 
-export const createEvaluationRun=async(model_id:number,evaluation_id:number):Promise<EvaluationRun>=>{
+export const createEvaluationRun=async(db:DbExecutor,model_id:number,evaluation_id:number):Promise<EvaluationRun>=>{
 
-    const result=await pool.query(
+    const result=await db.query(
         `INSERT INTO evaluation_runs
             (model_id,evaluation_id)
          VALUES ($1,$2)
@@ -63,8 +66,8 @@ export const createEvaluationRun=async(model_id:number,evaluation_id:number):Pro
     return result.rows[0]
 }
 
-export const getEvaluationRunById=async(id:number):Promise<EvaluationRun|undefined>=>{
-    const result=await pool.query(
+export const getEvaluationRunById=async(db:DbExecutor,id:number):Promise<EvaluationRun|undefined>=>{
+    const result=await db.query(
         `SELECT * FROM evaluation_runs
          WHERE id=$1
         `,
@@ -72,8 +75,8 @@ export const getEvaluationRunById=async(id:number):Promise<EvaluationRun|undefin
     )
     return result.rows[0]
 }
-export const getAllEvaluationResults=async(runId:number):Promise<EvaluationResult[]>=>{
-    const result=await pool.query(
+export const getAllEvaluationResults=async(db:DbExecutor,runId:number):Promise<EvaluationResult[]>=>{
+    const result=await db.query(
         `
         SELECT * FROM evaluation_results
         WHERE run_id=$1
@@ -83,8 +86,8 @@ export const getAllEvaluationResults=async(runId:number):Promise<EvaluationResul
     return result.rows
 }
 
-export const createNewEvaluationResults=async(runId:number,testCaseId:number,actualOutput:string,passed:boolean)=>{
-   await pool.query(
+export const createNewEvaluationResults=async(db:DbExecutor,runId:number,testCaseId:number,actualOutput:string,passed:boolean)=>{
+   await db.query(
         `
         INSERT INTO evaluation_results
             (run_id,test_case_id,actual_output,passed)
@@ -97,12 +100,14 @@ export const createNewEvaluationResults=async(runId:number,testCaseId:number,act
 }
 
 export const updateEvaluationRuns = async (
+    db:DbExecutor,
     runId: number,
     score: number | null,
     status: statusTypes,
     errorMessage: string | null
 ): Promise<EvaluationRun> => {
-    const result = await pool.query(
+
+    const result = await db.query(
         `
         UPDATE evaluation_runs
         SET status = $2,

@@ -97,6 +97,13 @@ export interface ModelRunner{
     generate<T>(input:string,schema:T):Promise<string|T>
 }
 
+export const evaluationResultPromiseResolver=z.object({
+    testCaseId:z.number().int().positive(),
+    actualOutput:z.string(),
+    passed:z.boolean()
+})
+
+export type evaluationResultPromiseResolverType=z.infer<typeof evaluationResultPromiseResolver>
 
 export interface EvaluationResult{
     id:number
@@ -109,3 +116,8 @@ export interface EvaluationResult{
 }
 
 
+export interface RateLimitRecord{
+    count:number
+    windowStart:Date
+    currentTimeStamp:Date
+}
