@@ -121,3 +121,17 @@ export interface RateLimitRecord{
     windowStart:Date
     currentTimeStamp:Date
 }
+
+export interface GitHubIdentity {
+    id: string;
+    email:string|null;
+    username: string;
+    displayName: string | null;
+}
+
+export interface AppUser {
+    id: number;
+    email: string | null;
+    display_name: string | null;
+    status: "active" | "disabled";
+}

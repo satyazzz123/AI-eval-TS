@@ -1,4 +1,4 @@
-import { ErrorRequestHandler } from "express";
+import type { ErrorRequestHandler } from "express";
 
 export const errorHandler: ErrorRequestHandler = (
     err,
@@ -8,7 +8,11 @@ export const errorHandler: ErrorRequestHandler = (
 ) => {
     console.error(err);
 
-    return res.status(500).json({
+    if (res.headersSent) {
+        return next(err);
+    }
+
+    res.status(500).json({
         error: "Internal server error"
     });
 };

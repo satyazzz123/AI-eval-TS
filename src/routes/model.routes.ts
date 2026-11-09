@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { getModels,addModel,deleteModel,getModelById } from "../controllers/model.controller";
 import { rateLimitMiddleware } from "../middleware/rateLimiter.middleware";
+import { requirePermission } from "../middleware/requirePermission.middleware";
 const router = Router();
-router.get("/",rateLimitMiddleware,getModels)
+router.get("/",requirePermission("model:read"),getModels)
 
-router.post("/",addModel);
+router.post("/",requirePermission("model:create"),addModel);
 
-router.get("/:id",getModelById)
+router.get("/:id",requirePermission("model:read"),getModelById)
 
-router.delete("/:id",deleteModel)
+router.delete("/:id",requirePermission("model:delete"),deleteModel)
 
 export default router;
