@@ -1,6 +1,6 @@
 import { CreateEvaluationInput, createEvaluationSchema, idSchema, type TestCase,userEvaluationRunSchema,userTestCaseInputSchema ,idValidator} from "../models";
 import { RequestHandler } from "express";
-import { getTestCasesFromEvaluationId,createEvaluation, createTestCase, createNewEvaluationRun,executeEvaluationRun } from "../services/evaluation.services";
+import { getTestCasesFromEvaluationId,createEvaluation, createTestCase, createNewEvaluationRun,executeEvaluationRun, requestEvaluationExecution, showEvaluationResultsFromId } from "../services/evaluation.services";
 
 export const getTestCases:RequestHandler=async(req,res)=>{
 
@@ -73,9 +73,41 @@ export const createNewEvaluationResults:RequestHandler=async(req,res)=>{
     if(!result.success){
         return res.status(400).json({error:result.error.issues})
     }
-    let evalResults=await executeEvaluationRun(result.data)
-    if(evalResults.length===0){
-        return res.status(200).json({error:"There are no evaluation Results"})
+    
+    try {
+        const queuedRun=await requestEvaluationExecution(result.data)
+        return res.status(202).json({message:"Evaluation Run is queued Successfully",...queuedRun})
+    } catch (error) {
+        if (error instanceof Error ){
+            if(error.message==="EVALUATION_RUN_NOT_FOUND"){
+                res.status(404).json({error:"Evaluation Not Found"})
+            }
+            if(error.message==="EVALUATION_RUN_ALREADY_REQUESTED"){
+                res.status(409).json({error:"Evaluation run has already been requested"})
+            }
+
+            
+        }
     }
-    return res.status(200).json({message:"WE have your REsults",evalResults})
 }
+
+
+export const showEvaluationResultsFromIdController: RequestHandler = async (
+    req,
+    res
+) => {
+    const result = idValidator.safeParse(req.params.id);
+
+    if (!result.success) {
+        return res.status(400).json({
+            error: result.error.issues
+        });
+    }
+
+    const evaluationResults = await showEvaluationResultsFromId(result.data);
+
+    return res.status(200).json({
+        message: "Evaluation results fetched successfully",
+        evaluationResults
+    });
+};

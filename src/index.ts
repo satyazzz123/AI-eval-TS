@@ -10,7 +10,9 @@ import { sessionMiddleware } from "./config/session";
 import passport from "passport";
 import "./config/passport";
 import { authMiddleware } from "./middleware/requireAuth.middleware";
-
+import { initializeBoss } from "./config/pgboss";
+import { registerEvaluationWorker } from "./workers/evaluation.worker";
+import { startOutboxPublisher } from "./workers/outbox.publisher";
 const app=express()
 app.use(express.json());
 app.use(sessionMiddleware);
@@ -35,7 +37,19 @@ app.get("/test-error", (req, res) => {
     throw new Error("Something went terribly wrong");
 });
 app.use(errorHandler);
-app.listen(3000,()=>{
-    console.log("Connected to backend");
-    
-})
+
+
+const startServer = async () => {
+  try {
+    await initializeBoss();
+    await registerEvaluationWorker()
+    void startOutboxPublisher();
+    app.listen(3000, () => {
+      console.log("Server running on port 3000");
+    });
+  } catch (error) {
+    console.error("Startup failed:", error);
+    process.exit(1);
+  }
+};
+startServer();

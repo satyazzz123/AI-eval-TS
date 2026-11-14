@@ -114,4 +114,16 @@ CREATE INDEX idx_evaluations_user_id
 CREATE INDEX idx_models_user_id
     ON models(user_id);
 
+CREATE TABLE outbox_events (
+    id BIGSERIAL PRIMARY KEY,
+
+    event_type TEXT NOT NULL,
+
+    payload JSONB NOT NULL,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    published_at TIMESTAMPTZ NULL
+);
+
 COMMIT;

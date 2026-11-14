@@ -10,6 +10,9 @@ import { LlmJudgeBoolSchema } from "../Evaluator/evaluator";
 import { ExactMatchEvaluator } from "../Evaluator/exactMatchEvaluator";
 import { pool } from "../config/database";
 import { runWithConcurrency } from "../helpers/concurrencyManager";
+import { boss } from "../config/pgboss";
+import { markEvaluationRunQueued } from "../repositories/evaluation.repository";
+import { createOutboxEvent } from "../repositories/outbox.repository";
 dotenv.config()
 const apiKey = process.env.GEMINI_API_KEY;
 
@@ -32,6 +35,9 @@ export const createNewEvaluationRun=async(modelId:number,evaluationId:number):Pr
 export const getEvaluationRunFromId=async(id:number):Promise<EvaluationRun|undefined>=>{
 return await getEvaluationRunById(pool,id)
 }
+
+export const showEvaluationResultsFromId=async(id:number)=> await getAllEvaluationResults(pool,id)
+
 export const executeEvaluationRun = async (
     evaluationRunId: number
 ): Promise<EvaluationResult[]> => {
@@ -58,13 +64,7 @@ export const executeEvaluationRun = async (
 
     // Mark run as started.
     // This does not need to be part of the transaction.
-    await updateEvaluationRuns(
-        pool,
-        evaluationRunId,
-        null,
-        "running",
-        null
-    );
+
 
     const runner = getRunner(model);
 
@@ -80,8 +80,6 @@ export const executeEvaluationRun = async (
     let promiseResults: evaluationResultPromiseResolverType[];
 
     try {
-
-
     promiseResults = await runWithConcurrency(
     testCases,
     2,
@@ -127,18 +125,8 @@ export const executeEvaluationRun = async (
 );
     } catch (error) {
 
-        const message =
-            error instanceof Error
-                ? error.message
-                : "Unknown error has occurred";
+      
 
-        await updateEvaluationRuns(
-            pool,
-            evaluationRunId,
-            0,
-            "failed",
-            message
-        );
 
         throw error;
     }
@@ -148,13 +136,14 @@ export const executeEvaluationRun = async (
      * Persist all results atomically.
      */
     const client = await pool.connect();
-
+    console.log("Database client acquired");
     try {
 
         await client.query("BEGIN");
+        console.log("Transaction started");
 
         for (const result of promiseResults) {
-
+            console.log("Persisting test case:", result.testCaseId);
             await createNewEvaluationResults(
                 client,
                 evaluationRunId,
@@ -162,13 +151,14 @@ export const executeEvaluationRun = async (
                 result.actualOutput,
                 result.passed
             );
+            console.log("Persisted test case:", result.testCaseId);
         }
-
+        console.log("All results persisted");
         const results = await getAllEvaluationResults(
             client,
             evaluationRunId
         );
-
+        console.log("Results fetched");
         const passedCount = results.filter(
             result => result.passed
         ).length;
@@ -181,9 +171,10 @@ export const executeEvaluationRun = async (
             score * 100,
             "success",
             null
-        );
-
+        );  
+        console.log("Evaluation run updated");
         await client.query("COMMIT");
+        console.log("Transaction committed");
 
         return results;
 
@@ -191,20 +182,9 @@ export const executeEvaluationRun = async (
 
         await client.query("ROLLBACK");
 
-        const message =
-            error instanceof Error
-                ? error.message
-                : "Unknown error has occurred";
 
-        // This happens after ROLLBACK, so this update
-        // is NOT part of the failed transaction.
-        await updateEvaluationRuns(
-            pool,
-            evaluationRunId,
-            0,
-            "failed",
-            message
-        );
+
+
 
         throw error;
 
@@ -214,3 +194,44 @@ export const executeEvaluationRun = async (
     }
 };
 
+export const requestEvaluationExecution = async (
+    runId: number
+) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        // Step 1: Atomically transition pending -> queued.
+        const run = await markEvaluationRunQueued(client, runId);
+
+        if (!run) {
+            throw new Error("EVALUATION_RUN_NOT_REQUESTABLE");
+        }
+
+        // Step 2: Record the event in the same transaction.
+        const event = await createOutboxEvent(
+            client,
+            "evaluation.run.requested",
+            {
+                evaluationRunId: runId
+            }
+        );
+
+        // Step 3: Commit both operations together.
+        await client.query("COMMIT");
+
+        return {
+            runId,
+            eventId: event.id,
+            status: "queued" as const
+        };
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+
+    } finally {
+        client.release();
+    }
+};

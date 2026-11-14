@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { ModelRunner } from "../models";
+import { toProviderRequestError } from "../errors/providerRequestError";
 
 export class GeminiRunner implements ModelRunner{
 
@@ -14,9 +15,8 @@ export class GeminiRunner implements ModelRunner{
 
     async generate(input: string): Promise<string> {
         
-        
-
-        const interaction=await this.ai.models.generateContent({
+        try {
+            const interaction=await this.ai.models.generateContent({
             // model: this.modelName,
             model:"gemini-3.5-flash-lite",
             contents:input
@@ -25,5 +25,11 @@ export class GeminiRunner implements ModelRunner{
             throw new Error(`Gemini Mode is facing problems`)
         }
         return interaction.text
+            
+        } catch (error) {
+            throw toProviderRequestError(error,"gemini-generation")
+        }
+
+        
     }
 }

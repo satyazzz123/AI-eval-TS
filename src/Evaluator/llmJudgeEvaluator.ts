@@ -5,6 +5,7 @@ import { generateObject } from "ai";
 import { google } from "@ai-sdk/google";
 import {z} from "zod"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
+import { toProviderRequestError } from "../errors/providerRequestError";
 export class LlmasJudge<T> implements Evaluator<T>{
 
     private googleProvider;
@@ -19,7 +20,9 @@ export class LlmasJudge<T> implements Evaluator<T>{
     }
 
     async evaluate(actualOutput: string, expectedOutput: string): Promise<T> {
-        const prompt = `
+
+        try {
+            const prompt = `
         You are a Judge of outputs. You have to judge between a generated
         output and the actual output and figure out if they are
         contextually saying the same.
@@ -38,5 +41,10 @@ export class LlmasJudge<T> implements Evaluator<T>{
             }
         )
         return object as T
+            
+        } catch (error) {
+            throw toProviderRequestError(error,"gemini-judge")
+        }
+        
     }
 }

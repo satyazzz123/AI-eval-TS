@@ -72,7 +72,8 @@ export const statusTypes = z.enum([
   "success",
   "pending",
   "failed",
-  "running"
+  "running",
+  "queued"
 ]);
 
 export type statusTypes = z.infer<typeof statusTypes>;
@@ -134,4 +135,8 @@ export interface AppUser {
     email: string | null;
     display_name: string | null;
     status: "active" | "disabled";
+}
+
+export interface EvaluationJobData {
+  evaluationRunId: number;
 }

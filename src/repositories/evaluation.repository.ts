@@ -92,6 +92,10 @@ export const createNewEvaluationResults=async(db:DbExecutor,runId:number,testCas
         INSERT INTO evaluation_results
             (run_id,test_case_id,actual_output,passed)
         VALUES($1,$2,$3,$4)
+        ON CONFLICT (run_id,test_case_id)
+        DO UPDATE SET
+            actual_output=EXCLUDED.actual_output,
+            passed=EXCLUDED.passed
         
         `,
         [runId,testCaseId,actualOutput,passed]
@@ -121,3 +125,36 @@ export const updateEvaluationRuns = async (
 
     return result.rows[0];
 };
+
+export const markEvaluationRunQueued = async (
+  db: DbExecutor,
+  runId: number
+): Promise<EvaluationRun | undefined> => {
+  const result = await db.query<EvaluationRun>(
+    `UPDATE evaluation_runs
+     SET status = 'queued'
+     WHERE id = $1
+       AND status = 'pending'
+     RETURNING *`,
+    [runId]
+  );
+
+  return result.rows[0];
+};
+
+
+
+
+export const claimEvaluationRun=async(db:DbExecutor,runId:number):Promise<EvaluationRun|undefined>=>{
+
+    const result=await db.query<EvaluationRun>(
+        `UPDATE evaluation_runs
+        SET status='running'
+        WHERE id=$1
+        AND status='queued'
+        RETURNING *
+        `,
+        [runId]
+    )
+    return result.rows[0];
+}
